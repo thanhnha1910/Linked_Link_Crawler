@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Prospect Finder v2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #0a66c2;
+            --primary-hover: #004182;
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --accent: #6366f1;
+        }
+
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text-color);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0 0 10px 0;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 16px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group { margin-bottom: 0; }
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+            font-size: 0.9rem;
+        }
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px 14px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            background: #fafafa;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(10, 102, 194, 0.1);
+        }
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .hint {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Advanced Options Toggle */
+        .advanced-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s;
+        }
+        .advanced-toggle:hover {
+            background: #f1f5f9;
+        }
+        .advanced-toggle .icon {
+            transition: transform 0.3s;
+        }
+        .advanced-toggle.open .icon {
+            transform: rotate(180deg);
+        }
+        .advanced-options {
+            display: none;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 20px;
+        }
+        .advanced-options.show {
+            display: block;
+        }
+
+        /* Preset Buttons */
+        .preset-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .preset-btn {
+            padding: 8px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .preset-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Submit Button */
+        .btn-analyze {
+            background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .btn-analyze:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(10, 102, 194, 0.3);
+        }
+        .btn-analyze:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-export:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Status Area */
+        .status-area {
+            margin-top: 24px;
+            padding: 16px 20px;
+            border-radius: 12px;
+            background: #eff6ff;
+            display: none;
+            border-left: 4px solid var(--primary);
+        }
+        .status-area.success {
+            background: #f0fdf4;
+            border-color: #10b981;
+        }
+        .status-area.error {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+        .status-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e5e7eb;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Results Table */
+        .result-container { display: none; }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .result-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .count-badge {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        thead {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+        th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: top;
+        }
+        tr:hover {
+            background: #f8fafc;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .cell-name {
+            font-weight: 600;
+            color: #111827;
+        }
+        .cell-company {
+            color: #4b5563;
+        }
+        .cell-position {
+            font-size: 0.85rem;
+            color: #6b7280;
+            max-width: 300px;
+        }
+        .tag {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+            color: #4338ca;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin: 2px;
+        }
+        .link-btn {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .link-btn:hover {
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 1.8rem; }
+            .card { padding: 20px; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>🔍 LinkedIn Prospect Finder</h1>
+        <p>Automated Lead Generation & Prospecting</p>
+        <div class="badge">✨ Dynamic Search Mode - No Hardcoding</div>
+    </div>
+
+    <div class="card">
+        <form id="searchForm">
+            <!-- Quick Presets -->
+            <div class="section-title">Quick Presets</div>
+            <div class="preset-buttons">
+                <button type="button" class="preset-btn" onclick="applyPreset('ai-ambassadors')">🤖 AI Ambassadors</button>
+                <button type="button" class="preset-btn" onclick="applyPreset('tech-leaders')">💼 Tech Leaders</button>
+                <button type="button" class="preset-btn" onclick="applyPreset('startup-founders')">🚀 Startup Founders</button>
+                <button type="button" class="preset-btn" onclick="applyPreset('marketing-heads')">📊 Marketing Heads</button>
+                <button type="button" class="preset-btn" onclick="applyPreset('custom')">⚙️ Custom Search</button>
+            </div>
+
+            <!-- Basic Search -->
+            <div class="section-title">Search Criteria</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Search Keywords</label>
+                    <input type="text" id="queryInput" class="form-input" placeholder='e.g., "AI Ambassador" OR "CTO"'>
+                    <div class="hint">Use OR for multiple terms, quotes for exact match</div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Location</label>
+                    <select id="locationInput" class="form-select">
+                        <option value="Vietnam">🇻🇳 Vietnam</option>
+                        <option value="Hong Kong">🇭🇰 Hong Kong</option>
+                        <option value="Singapore">🇸🇬 Singapore</option>
+                        <option value="Thailand">🇹🇭 Thailand</option>
+                        <option value="Malaysia">🇲🇾 Malaysia</option>
+                        <option value="Indonesia">🇮🇩 Indonesia</option>
+                        <option value="Philippines">🇵🇭 Philippines</option>
+                        <option value="Taiwan">🇹🇼 Taiwan</option>
+                        <option value="Japan">🇯🇵 Japan</option>
+                        <option value="South Korea">🇰🇷 South Korea</option>
+                        <option value="Australia">🇦🇺 Australia</option>
+                        <option value="United States">🇺🇸 United States</option>
+                        <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                        <option value="">🌍 Any Location</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Max Profiles</label>
+                    <select id="maxProfilesInput" class="form-select">
+                        <option value="10">10 profiles (Fast)</option>
+                        <option value="20">20 profiles</option>
+                      
+                    
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Industry (Optional)</label>
+                    <select id="industryInput" class="form-select">
+                        <option value="">Any Industry</option>
+                        <option value="Technology">Technology</option>
+                        <option value="Finance">Finance & Banking</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Retail">Retail & E-commerce</option>
+                        <option value="Manufacturing">Manufacturing</option>
+                        <option value="Education">Education</option>
+                        <option value="Marketing">Marketing & Advertising</option>
+                        <option value="Consulting">Consulting</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label">Target Job Titles</label>
+                    <textarea id="titlesInput" class="form-textarea" placeholder="Founder, CEO, Director, Head of Marketing...">Founder, Co-Founder, CEO, Chief, CTO, CIO, Director, Head, VP, Vice President, Owner, Principal, Partner</textarea>
+                    <div class="hint">Comma-separated list. Max 20 titles. The system will prioritize profiles with these titles.</div>
+                </div>
+            </div>
+
+            <!-- Advanced Options -->
+     
+            <div class="advanced-options" id="advancedOptions">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Company Size</label>
+                        <select id="companySizeInput" class="form-select">
+                            <option value="">Any Size</option>
+                            <option value="1-10">1-10 employees (Startup)</option>
+                            <option value="11-50">11-50 employees</option>
+                            <option value="51-200">51-200 employees</option>
+                            <option value="201-500">201-500 employees</option>
+                            <option value="501-1000">501-1000 employees</option>
+                            <option value="1001+">1001+ employees (Enterprise)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Seniority Level</label>
+                        <select id="seniorityInput" class="form-select">
+                            <option value="">Any Level</option>
+                            <option value="Entry">Entry Level</option>
+                            <option value="Senior">Senior</option>
+                            <option value="Manager">Manager</option>
+                            <option value="Director">Director</option>
+                            <option value="VP">VP</option>
+                            <option value="CXO">CXO / Executive</option>
+                            <option value="Owner">Owner / Partner</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label">Must Include Names (Optional)</label>
+                        <input type="text" id="namesInput" class="form-input" placeholder="e.g., John Doe, Jane Smith">
+                        <div class="hint">Comma-separated names that MUST appear in results if found</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="searchBtn" class="btn-analyze">
+                <span>🔍</span>
+                <span>Start Searching</span>
+            </button>
+        </form>
+
+        <div class="status-area" id="statusArea">
+            <div class="status-content">
+                <div id="statusIcon"><div class="spinner"></div></div>
+                <div>
+                    <div id="statusText" style="font-weight: 600;">Ready</div>
+                    <div id="timerText" style="font-size: 0.85rem; color: #6b7280;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card result-container" id="resultCard">
+        <div class="result-header">
+            <div class="result-title">
+                Found Prospects
+                <span class="count-badge" id="countBadge">0</span>
+            </div>
+            <button class="btn-export" onclick="exportTableToExcel()">
+                <span>📥</span>
+                <span>Download Excel</span>
+            </button>
+        </div>
+        
+        <div class="table-wrapper">
+            <table id="prospectsTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Position / Headline</th>
+                        <th>Company</th>
+                        <th>Keywords</th>
+                        <th>Location</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // ⚙️ API CONFIGURATION
+    // ==========================================
+    const N8N_DOMAIN = 'https://n8n-nick.abapi.dev'; 
+    const API_START = `${N8N_DOMAIN}/webhook/linkedin-prospect-finder-start`;
+    const API_STATUS = `${N8N_DOMAIN}/webhook/linkedin-prospect-finder-status`;
+    // ==========================================
+
+    // DOM Elements
+    const searchForm = document.getElementById('searchForm');
+    const searchBtn = document.getElementById('searchBtn');
+    const statusArea = document.getElementById('statusArea');
+    const statusText = document.getElementById('statusText');
+    const statusIcon = document.getElementById('statusIcon');
+    const resultCard = document.getElementById('resultCard');
+    const tableBody = document.getElementById('tableBody');
+    const countBadge = document.getElementById('countBadge');
+    
+    let pollInterval;
+    let startTime;
+
+    // Presets
+    const PRESETS = {
+        'ai-ambassadors': {
+            query: '"AI Ambassador" OR "AI Evangelist" OR "AI Advocate" OR "GenAI Champion"',
+            titles: 'Founder, Co-Founder, CEO, Chief, CTO, Director, Head, VP, Innovation Lead',
+            location: 'Vietnam'
+        },
+        'tech-leaders': {
+            query: 'CTO OR "VP Engineering" OR "Head of Technology" OR "Tech Lead"',
+            titles: 'CTO, VP Engineering, Head of Technology, Technical Director, Engineering Manager',
+            location: 'Vietnam'
+        },
+        'startup-founders': {
+            query: 'Founder OR "Co-Founder" OR CEO OR "Startup"',
+            titles: 'Founder, Co-Founder, CEO, Managing Director, Owner',
+            location: 'Vietnam'
+        },
+        'marketing-heads': {
+            query: 'CMO OR "Head of Marketing" OR "Marketing Director" OR "Growth"',
+            titles: 'CMO, Head of Marketing, Marketing Director, VP Marketing, Growth Lead',
+            location: 'Vietnam'
+        },
+        'custom': {
+            query: '',
+            titles: 'Founder, CEO, CTO, Director, Head, VP',
+            location: 'Vietnam'
+        }
+    };
+
+    function applyPreset(presetName) {
+        const preset = PRESETS[presetName];
+        if (!preset) return;
+        
+        document.getElementById('queryInput').value = preset.query;
+        document.getElementById('titlesInput').value = preset.titles;
+        
+        // Update location dropdown
+        const locationSelect = document.getElementById('locationInput');
+        for (let option of locationSelect.options) {
+            if (option.value === preset.location) {
+                option.selected = true;
+                break;
+            }
+        }
+        
+        // Update active button
+        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+        event.target.classList.add('active');
+    }
+
+    function toggleAdvanced() {
+        const options = document.getElementById('advancedOptions');
+        const toggle = document.querySelector('.advanced-toggle');
+        options.classList.toggle('show');
+        toggle.classList.toggle('open');
+    }
+
+    // Form Submit
+    searchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<div class="spinner"></div> Starting...';
+        resultCard.style.display = 'none';
+        
+        // Collect form data
+        const query = document.getElementById('queryInput').value;
+        const location = document.getElementById('locationInput').value;
+        const maxProfiles = parseInt(document.getElementById('maxProfilesInput').value);
+        const industry = document.getElementById('industryInput').value;
+        const companySize = document.getElementById('companySizeInput').value;
+        const seniority = document.getElementById('seniorityInput').value;
+        const titlesRaw = document.getElementById('titlesInput').value;
+        const namesRaw = document.getElementById('namesInput').value;
+        
+        const decisionTitles = titlesRaw.split(',').map(t => t.trim()).filter(t => t);
+        const namesMustInclude = namesRaw ? namesRaw.split(',').map(n => n.trim()).filter(n => n) : [];
+
+        const payload = {
+            search_query: query,
+            location: location,
+            max_profiles: maxProfiles,
+            decision_titles: decisionTitles,
+            industry: industry,
+            company_size: companySize,
+            seniority: seniority,
+            names_must_include: namesMustInclude
+        };
+
+        console.log('📤 Sending payload:', payload);
+
+        try {
+            updateStatus('loading', 'Sending request to server...');
+            
+            const response = await fetch(API_START, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error('Failed to start workflow');
+            
+            const data = await response.json();
+            const jobId = data.jobId; 
+
+            updateStatus('loading', `Job ID: ${jobId.slice(-8)}... Scanning LinkedIn (2-5 mins)`);
+            startTime = Date.now();
+            
+            pollStatus(jobId);
+
+        } catch (error) {
+            console.error(error);
+            updateStatus('error', `Error: ${error.message}`);
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = '<span>🔍</span><span>Start Searching</span>';
+        }
+    });
+
+    // Polling
+    async function pollStatus(jobId) {
+        pollInterval = setInterval(async () => {
+            try {
+                const elapsed = Math.round((Date.now() - startTime) / 1000);
+                document.getElementById('timerText').innerText = `⏱️ ${elapsed}s elapsed`;
+
+                const res = await fetch(`${API_STATUS}?jobId=${jobId}`);
+                const data = await res.json();
+
+                if (data.status === 'completed') {
+                    clearInterval(pollInterval);
+                    updateStatus('success', '✅ Scan completed successfully!');
+                    searchBtn.disabled = false;
+                    searchBtn.innerHTML = '<span>🔍</span><span>Start Searching</span>';
+                    renderTable(data.result); 
+                } else if (data.status === 'error') {
+                    clearInterval(pollInterval);
+                    updateStatus('error', '❌ Workflow failed on server.');
+                    searchBtn.disabled = false;
+                    searchBtn.innerHTML = '<span>🔍</span><span>Start Searching</span>';
+                }
+            } catch (err) {
+                console.error('Polling error', err);
+            }
+        }, 3000);
+    }
+
+    // Render Table
+    function renderTable(data) {
+        tableBody.innerHTML = ''; 
+        resultCard.style.display = 'block';
+        
+        if (!data || data.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty-state">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <div>No prospects found matching your criteria.</div>
+                        <div style="margin-top: 8px; font-size: 0.9rem;">Try adjusting your search keywords or location.</div>
+                    </td>
+                </tr>`;
+            countBadge.innerText = '0';
+            return;
+        }
+
+        countBadge.innerText = data.length;
+
+        data.forEach(item => {
+            let keywordTags = '';
+            if (item.keywords_in_recent_post) {
+                const keys = item.keywords_in_recent_post.split(',').slice(0, 4);
+                keys.forEach(k => {
+                    if (k.trim()) keywordTags += `<span class="tag">${k.trim()}</span>`;
+                });
+            }
+            if (!keywordTags) keywordTags = '<span style="color:#9ca3af">-</span>';
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td class="cell-name">${item.personal_name || 'N/A'}</td>
+                <td class="cell-position">${item.position || 'N/A'}</td>
+                <td class="cell-company">${item.company_name || 'N/A'}</td>
+                <td>${keywordTags}</td>
+                <td>${item.location || 'N/A'}</td>
+                <td>
+                    ${item.profile_url ? `<a href="${item.profile_url}" target="_blank" class="link-btn">View ↗</a>` : '-'}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+        
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Status UI
+    function updateStatus(type, msg) {
+        statusArea.style.display = 'block';
+        statusText.innerText = msg;
+        statusArea.className = 'status-area';
+        
+        if (type === 'loading') {
+            statusIcon.innerHTML = '<div class="spinner"></div>';
+        } else if (type === 'success') {
+            statusIcon.innerHTML = '✅';
+            statusArea.classList.add('success');
+        } else if (type === 'error') {
+            statusIcon.innerHTML = '❌';
+            statusArea.classList.add('error');
+        }
+    }
+
+    // Export Excel
+    function exportTableToExcel() {
+        const table = document.getElementById("prospectsTable");
+        const wb = XLSX.utils.table_to_book(table, {sheet: "Prospects"});
+        const timestamp = new Date().toISOString().slice(0,10);
+        XLSX.writeFile(wb, `LinkedIn_Prospects_${timestamp}.xlsx`);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        applyPreset('ai-ambassadors');
+        document.querySelector('.preset-btn').classList.add('active');
+    });
+</script>
+
+</body>
+</html>
