@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        /* ... (Giữ nguyên CSS cũ) ... */
         :root {
             --primary: #0a66c2;
             --primary-hover: #004182;
@@ -114,6 +115,11 @@
             background: white;
             box-shadow: 0 0 0 4px rgba(10, 102, 194, 0.1);
         }
+        /* CSS báo lỗi khi để trống */
+        .form-input:invalid, .form-textarea:invalid {
+            border-color: #ef4444;
+        }
+        
         .form-textarea {
             resize: vertical;
             min-height: 100px;
@@ -367,8 +373,8 @@
             <div class="section-title">Search Criteria</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label class="form-label">Search Keywords</label>
-                    <input type="text" id="queryInput" class="form-input" placeholder='e.g., "AI Ambassador" OR "CTO"'>
+                    <label class="form-label">Search Keywords <span style="color:red">*</span></label>
+                    <input type="text" id="queryInput" class="form-input" placeholder='e.g., "AI Ambassador" OR "CTO"' required>
                     <div class="hint">Use OR for multiple terms, quotes for exact match</div>
                 </div>
                 
@@ -416,7 +422,7 @@
                 </div>
 
                 <div class="form-group full-width">
-                    <label class="form-label">Target Job Titles (Required)</label>
+                    <label class="form-label">Target Job Titles (Required) <span style="color:red">*</span></label>
                     <textarea id="titlesInput" class="form-textarea" placeholder="Founder, CEO, Director, Head of Marketing..." required></textarea>
                     <div class="hint">Comma-separated list. Max 20 titles. The system will prioritize profiles with these titles.</div>
                 </div>
@@ -544,12 +550,22 @@
     searchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // --- 🔴 BẮT LỖI TẠI ĐÂY ---
+        const queryInput = document.getElementById('queryInput');
+        if (!queryInput.value.trim()) {
+            // Hiện thông báo tiếng Anh chuẩn
+            alert("Please enter a search keyword to proceed.");
+            queryInput.focus();
+            return; // Dừng lại, không gửi request
+        }
+        // ------------------------
+        
         searchBtn.disabled = true;
         searchBtn.innerHTML = '<div class="spinner"></div> Starting...';
         resultCard.style.display = 'none';
         
         // Collect form data
-        const query = document.getElementById('queryInput').value;
+        const query = queryInput.value.trim();
         const location = document.getElementById('locationInput').value;
         const maxProfiles = parseInt(document.getElementById('maxProfilesInput').value);
         const industry = document.getElementById('industryInput').value;
