@@ -160,32 +160,6 @@
             display: block;
         }
 
-        /* Preset Buttons */
-        .preset-buttons {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .preset-btn {
-            padding: 8px 16px;
-            border: 1px solid #e5e7eb;
-            border-radius: 20px;
-            background: white;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-        .preset-btn:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-        .preset-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
         /* Submit Button */
         .btn-analyze {
             background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
@@ -390,17 +364,6 @@
 
     <div class="card">
         <form id="searchForm">
-            <!-- Quick Presets -->
-            <div class="section-title">Quick Presets</div>
-            <div class="preset-buttons">
-                <button type="button" class="preset-btn" onclick="applyPreset('ai-ambassadors')">🤖 AI Ambassadors</button>
-                <button type="button" class="preset-btn" onclick="applyPreset('tech-leaders')">💼 Tech Leaders</button>
-                <button type="button" class="preset-btn" onclick="applyPreset('startup-founders')">🚀 Startup Founders</button>
-                <button type="button" class="preset-btn" onclick="applyPreset('marketing-heads')">📊 Marketing Heads</button>
-                <button type="button" class="preset-btn" onclick="applyPreset('custom')">⚙️ Custom Search</button>
-            </div>
-
-            <!-- Basic Search -->
             <div class="section-title">Search Criteria</div>
             <div class="form-grid">
                 <div class="form-group">
@@ -434,8 +397,6 @@
                     <select id="maxProfilesInput" class="form-select">
                         <option value="10">10 profiles (Fast)</option>
                         <option value="20">20 profiles</option>
-                      
-                    
                     </select>
                 </div>
 
@@ -455,13 +416,16 @@
                 </div>
 
                 <div class="form-group full-width">
-                    <label class="form-label">Target Job Titles</label>
-                    <textarea id="titlesInput" class="form-textarea" placeholder="Founder, CEO, Director, Head of Marketing...">Founder, Co-Founder, CEO, Chief, CTO, CIO, Director, Head, VP, Vice President, Owner, Principal, Partner</textarea>
+                    <label class="form-label">Target Job Titles (Required)</label>
+                    <textarea id="titlesInput" class="form-textarea" placeholder="Founder, CEO, Director, Head of Marketing..." required></textarea>
                     <div class="hint">Comma-separated list. Max 20 titles. The system will prioritize profiles with these titles.</div>
                 </div>
             </div>
 
-            <!-- Advanced Options -->
+            <div class="advanced-toggle" onclick="toggleAdvanced()">
+                <span>Advanced Options</span>
+                <span class="icon">▼</span>
+            </div>
      
             <div class="advanced-options" id="advancedOptions">
                 <div class="form-grid">
@@ -568,56 +532,6 @@
     
     let pollInterval;
     let startTime;
-
-    // Presets
-    const PRESETS = {
-        'ai-ambassadors': {
-            query: '"AI Ambassador" OR "AI Evangelist" OR "AI Advocate" OR "GenAI Champion"',
-            titles: 'Founder, Co-Founder, CEO, Chief, CTO, Director, Head, VP, Innovation Lead',
-            location: 'Vietnam'
-        },
-        'tech-leaders': {
-            query: 'CTO OR "VP Engineering" OR "Head of Technology" OR "Tech Lead"',
-            titles: 'CTO, VP Engineering, Head of Technology, Technical Director, Engineering Manager',
-            location: 'Vietnam'
-        },
-        'startup-founders': {
-            query: 'Founder OR "Co-Founder" OR CEO OR "Startup"',
-            titles: 'Founder, Co-Founder, CEO, Managing Director, Owner',
-            location: 'Vietnam'
-        },
-        'marketing-heads': {
-            query: 'CMO OR "Head of Marketing" OR "Marketing Director" OR "Growth"',
-            titles: 'CMO, Head of Marketing, Marketing Director, VP Marketing, Growth Lead',
-            location: 'Vietnam'
-        },
-        'custom': {
-            query: '',
-            titles: 'Founder, CEO, CTO, Director, Head, VP',
-            location: 'Vietnam'
-        }
-    };
-
-    function applyPreset(presetName) {
-        const preset = PRESETS[presetName];
-        if (!preset) return;
-        
-        document.getElementById('queryInput').value = preset.query;
-        document.getElementById('titlesInput').value = preset.titles;
-        
-        // Update location dropdown
-        const locationSelect = document.getElementById('locationInput');
-        for (let option of locationSelect.options) {
-            if (option.value === preset.location) {
-                option.selected = true;
-                break;
-            }
-        }
-        
-        // Update active button
-        document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
-    }
 
     function toggleAdvanced() {
         const options = document.getElementById('advancedOptions');
@@ -789,11 +703,6 @@
         XLSX.writeFile(wb, `LinkedIn_Prospects_${timestamp}.xlsx`);
     }
 
-    // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-        applyPreset('ai-ambassadors');
-        document.querySelector('.preset-btn').classList.add('active');
-    });
 </script>
 
 </body>
