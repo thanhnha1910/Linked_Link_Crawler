@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LinkedIn Prospect Finder v2</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>LinkedIn Prospect Finder v3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* ... (Giữ nguyên CSS cũ) ... */
         :root {
             --primary: #0a66c2;
             --primary-hover: #004182;
@@ -16,6 +15,8 @@
             --text-color: #1f2937;
             --border-color: #e5e7eb;
             --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
             --accent: #6366f1;
         }
 
@@ -31,7 +32,7 @@
             line-height: 1.6;
         }
 
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1600px; margin: 0 auto; }
 
         .header {
             text-align: center;
@@ -114,10 +115,6 @@
             border-color: var(--primary);
             background: white;
             box-shadow: 0 0 0 4px rgba(10, 102, 194, 0.1);
-        }
-        /* CSS báo lỗi khi để trống */
-        .form-input:invalid, .form-textarea:invalid {
-            border-color: #ef4444;
         }
         
         .form-textarea {
@@ -206,6 +203,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            transition: all 0.2s;
         }
         .btn-export:hover {
             transform: translateY(-1px);
@@ -244,8 +242,39 @@
         }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* Results Table */
+        /* Results */
         .result-container { display: none; }
+        
+        /* Stats Summary */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 1px solid #e5e7eb;
+        }
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 4px;
+        }
+        .stat-card.hot .stat-value { color: #ef4444; }
+        .stat-card.warm .stat-value { color: #f59e0b; }
+        .stat-card.cold .stat-value { color: #3b82f6; }
+
         .result-header {
             display: flex;
             justify-content: space-between;
@@ -269,6 +298,36 @@
             font-size: 0.85rem;
         }
 
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filter-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .filter-tab:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        .filter-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .filter-tab.hot.active { background: #ef4444; border-color: #ef4444; }
+        .filter-tab.warm.active { background: #f59e0b; border-color: #f59e0b; }
+        .filter-tab.cold.active { background: #3b82f6; border-color: #3b82f6; }
+
         .table-wrapper {
             overflow-x: auto;
             border-radius: 12px;
@@ -283,20 +342,20 @@
             background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
         }
         th {
-            padding: 14px 16px;
+            padding: 14px 12px;
             text-align: left;
             font-weight: 600;
             color: #374151;
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             letter-spacing: 0.05em;
             white-space: nowrap;
             border-bottom: 2px solid #e5e7eb;
         }
         td {
-            padding: 14px 16px;
+            padding: 14px 12px;
             border-bottom: 1px solid #f3f4f6;
-            vertical-align: top;
+            vertical-align: middle;
         }
         tr:hover {
             background: #f8fafc;
@@ -311,32 +370,122 @@
         }
         .cell-company {
             color: #4b5563;
+            font-weight: 500;
         }
         .cell-position {
             font-size: 0.85rem;
             color: #6b7280;
-            max-width: 300px;
+            max-width: 250px;
+            line-height: 1.4;
         }
-        .tag {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
-            color: #4338ca;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin: 2px;
-        }
-        .link-btn {
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 500;
+        
+        /* Segment Badge */
+        .segment-badge {
             display: inline-flex;
             align-items: center;
             gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
         }
-        .link-btn:hover {
-            text-decoration: underline;
+        .segment-badge.hot {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+        .segment-badge.warm {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a;
+        }
+        .segment-badge.cold {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+        }
+
+        /* Score Badge */
+        .score-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        .score-badge.high {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .score-badge.medium {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        .score-badge.low {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+            color: #4338ca;
+            font-size: 0.7rem;
+            font-weight: 500;
+            margin: 2px;
+            white-space: nowrap;
+        }
+        .tag.ai { background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%); color: #be185d; }
+        .tag.tech { background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); color: #1d4ed8; }
+        .tag.finance { background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%); color: #047857; }
+        .tag.ambassador { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #b45309; }
+
+        /* Action Buttons */
+        .action-btns {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-action {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-linkedin {
+            background: linear-gradient(135deg, #0a66c2 0%, #004182 100%);
+            color: white;
+        }
+        .btn-linkedin:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);
+        }
+        .btn-copy {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+        }
+        .btn-copy:hover {
+            background: #e5e7eb;
+        }
+        .btn-copy.copied {
+            background: #d1fae5;
+            color: #047857;
+            border-color: #a7f3d0;
         }
 
         .empty-state {
@@ -351,11 +500,44 @@
             opacity: 0.5;
         }
 
+        /* Connection count */
+        .connection-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            color: #6b7280;
+        }
+        .connection-info svg {
+            width: 14px;
+            height: 14px;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header h1 { font-size: 1.8rem; }
             .card { padding: 20px; }
             .form-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1f2937;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
     </style>
 </head>
@@ -364,8 +546,8 @@
 <div class="container">
     <div class="header">
         <h1>🔍 LinkedIn Prospect Finder</h1>
-        <p>Automated Lead Generation & Prospecting</p>
-        <div class="badge">✨ Dynamic Search Mode - No Hardcoding</div>
+        <p>Automated Lead Generation & Prospecting with AI Scoring</p>
+        <div class="badge">✨ v3.0 - Enhanced Results with Lead Scoring</div>
     </div>
 
     <div class="card">
@@ -381,8 +563,8 @@
                 <div class="form-group">
                     <label class="form-label">Location</label>
                     <select id="locationInput" class="form-select">
-                        <option value="Vietnam">🇻🇳 Vietnam</option>
                         <option value="Hong Kong">🇭🇰 Hong Kong</option>
+                        <option value="Vietnam">🇻🇳 Vietnam</option>
                         <option value="Singapore">🇸🇬 Singapore</option>
                         <option value="Thailand">🇹🇭 Thailand</option>
                         <option value="Malaysia">🇲🇾 Malaysia</option>
@@ -403,6 +585,7 @@
                     <select id="maxProfilesInput" class="form-select">
                         <option value="10">10 profiles (Fast)</option>
                         <option value="20">20 profiles</option>
+                        <option value="30">30 profiles (Max)</option>
                     </select>
                 </div>
 
@@ -422,14 +605,14 @@
                 </div>
 
                 <div class="form-group full-width">
-                    <label class="form-label">Target Job Titles (Required) <span style="color:red">*</span></label>
-                    <textarea id="titlesInput" class="form-textarea" placeholder="Founder, CEO, Director, Head of Marketing..." required></textarea>
-                    <div class="hint">Comma-separated list. Max 20 titles. The system will prioritize profiles with these titles.</div>
+                    <label class="form-label">Target Job Titles <span style="color:red">*</span></label>
+                    <textarea id="titlesInput" class="form-textarea" placeholder="Founder, CEO, CTO, Director, Head of AI..." required>CEO, Founder, CTO, Director, Head, VP</textarea>
+                    <div class="hint">Comma-separated list. Max 20 titles. Profiles with these titles will be prioritized.</div>
                 </div>
             </div>
 
             <div class="advanced-toggle" onclick="toggleAdvanced()">
-                <span>Advanced Options</span>
+                <span>⚙️ Advanced Options</span>
                 <span class="icon">▼</span>
             </div>
      
@@ -488,27 +671,64 @@
     </div>
 
     <div class="card result-container" id="resultCard">
+        <!-- Stats Summary -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">Total Prospects</div>
+            </div>
+            <div class="stat-card hot">
+                <div class="stat-value" id="hotCount">0</div>
+                <div class="stat-label">🔥 Hot Leads</div>
+            </div>
+            <div class="stat-card warm">
+                <div class="stat-value" id="warmCount">0</div>
+                <div class="stat-label">🌡️ Warm Leads</div>
+            </div>
+            <div class="stat-card cold">
+                <div class="stat-value" id="coldCount">0</div>
+                <div class="stat-label">❄️ Cold Leads</div>
+            </div>
+        </div>
+
         <div class="result-header">
             <div class="result-title">
                 Found Prospects
                 <span class="count-badge" id="countBadge">0</span>
             </div>
-            <button class="btn-export" onclick="exportTableToExcel()">
-                <span>📥</span>
-                <span>Download Excel</span>
-            </button>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-export" onclick="exportTableToExcel()">
+                    <span>📥</span>
+                    <span>Download Excel</span>
+                </button>
+                <button class="btn-export" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);" onclick="copyAllEmails()">
+                    <span>📋</span>
+                    <span>Copy All URLs</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+            <div class="filter-tab active" data-filter="all" onclick="filterTable('all', this)">All</div>
+            <div class="filter-tab hot" data-filter="Hot" onclick="filterTable('Hot', this)">🔥 Hot</div>
+            <div class="filter-tab warm" data-filter="Warm" onclick="filterTable('Warm', this)">🌡️ Warm</div>
+            <div class="filter-tab cold" data-filter="Cold" onclick="filterTable('Cold', this)">❄️ Cold</div>
         </div>
         
         <div class="table-wrapper">
             <table id="prospectsTable">
                 <thead>
                     <tr>
+                        <th>#</th>
+                        <th>Score</th>
                         <th>Name</th>
-                        <th>Position / Headline</th>
+                        <th>Position</th>
                         <th>Company</th>
-                        <th>Keywords</th>
+                        <th>Industry / Tags</th>
                         <th>Location</th>
-                        <th>Action</th>
+                        <th>Connections</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody"></tbody>
@@ -516,6 +736,9 @@
         </div>
     </div>
 </div>
+
+<!-- Toast -->
+<div class="toast" id="toast">Copied to clipboard!</div>
 
 <script>
     // ==========================================
@@ -525,6 +748,9 @@
     const API_START = `${N8N_DOMAIN}/webhook/linkedin-prospect-finder-start`;
     const API_STATUS = `${N8N_DOMAIN}/webhook/linkedin-prospect-finder-status`;
     // ==========================================
+
+    // Store all data for filtering
+    let allProspects = [];
 
     // DOM Elements
     const searchForm = document.getElementById('searchForm');
@@ -550,15 +776,12 @@
     searchForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // --- 🔴 BẮT LỖI TẠI ĐÂY ---
         const queryInput = document.getElementById('queryInput');
         if (!queryInput.value.trim()) {
-            // Hiện thông báo tiếng Anh chuẩn
             alert("Please enter a search keyword to proceed.");
             queryInput.focus();
-            return; // Dừng lại, không gửi request
+            return;
         }
-        // ------------------------
         
         searchBtn.disabled = true;
         searchBtn.innerHTML = '<div class="spinner"></div> Starting...';
@@ -633,11 +856,12 @@
                     searchBtn.disabled = false;
                     searchBtn.innerHTML = '<span>🔍</span><span>Start Searching</span>';
                     renderTable(data.result); 
-                } else if (data.status === 'error') {
+                } else if (data.status === 'error' || data.status === 'completed-with-errors') {
                     clearInterval(pollInterval);
-                    updateStatus('error', '❌ Workflow failed on server.');
+                    updateStatus('error', '❌ Workflow encountered an error.');
                     searchBtn.disabled = false;
                     searchBtn.innerHTML = '<span>🔍</span><span>Start Searching</span>';
+                    if (data.result) renderTable(data.result);
                 }
             } catch (err) {
                 console.error('Polling error', err);
@@ -645,15 +869,16 @@
         }, 3000);
     }
 
-    // Render Table
+    // Render Table with new fields
     function renderTable(data) {
+        allProspects = data || [];
         tableBody.innerHTML = ''; 
         resultCard.style.display = 'block';
         
         if (!data || data.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="empty-state">
+                    <td colspan="9" class="empty-state">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -661,37 +886,148 @@
                         <div style="margin-top: 8px; font-size: 0.9rem;">Try adjusting your search keywords or location.</div>
                     </td>
                 </tr>`;
-            countBadge.innerText = '0';
+            updateStats([]);
             return;
         }
 
+        updateStats(data);
         countBadge.innerText = data.length;
 
-        data.forEach(item => {
-            let keywordTags = '';
-            if (item.keywords_in_recent_post) {
-                const keys = item.keywords_in_recent_post.split(',').slice(0, 4);
-                keys.forEach(k => {
-                    if (k.trim()) keywordTags += `<span class="tag">${k.trim()}</span>`;
-                });
-            }
-            if (!keywordTags) keywordTags = '<span style="color:#9ca3af">-</span>';
+        renderRows(data);
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderRows(data) {
+        tableBody.innerHTML = '';
+        
+        data.forEach((item, index) => {
+            // Generate tags HTML
+            let tagsHtml = '';
+            const tags = item.tags ? item.tags.split(',').map(t => t.trim()).filter(t => t) : [];
+            tags.slice(0, 4).forEach(tag => {
+                let tagClass = '';
+                if (tag.toLowerCase().includes('ai')) tagClass = 'ai';
+                else if (tag.toLowerCase().includes('tech')) tagClass = 'tech';
+                else if (tag.toLowerCase().includes('finance')) tagClass = 'finance';
+                else if (tag.toLowerCase().includes('ambassador')) tagClass = 'ambassador';
+                tagsHtml += `<span class="tag ${tagClass}">${tag}</span>`;
+            });
+            if (!tagsHtml) tagsHtml = `<span class="tag">${item.industry || 'General'}</span>`;
+
+            // Score badge class
+            const score = item.lead_score || 0;
+            let scoreClass = 'low';
+            if (score >= 25) scoreClass = 'high';
+            else if (score >= 15) scoreClass = 'medium';
+
+            // Segment badge
+            const segment = item.segment || 'Cold';
+            const segmentClass = segment.toLowerCase();
+
+            // LinkedIn URL - ưu tiên linkedin_url, sau đó profile_url
+            const linkedinUrl = item.linkedin_url || item.profile_url || '';
 
             const row = document.createElement('tr');
+            row.setAttribute('data-segment', segment);
             row.innerHTML = `
-                <td class="cell-name">${item.personal_name || 'N/A'}</td>
+                <td style="color: #9ca3af; font-weight: 500;">${item.row_number || index + 1}</td>
+                <td>
+                    <div class="score-badge ${scoreClass}">${score}</div>
+                </td>
+                <td>
+                    <div class="cell-name">${item.personal_name || 'N/A'}</div>
+                    <div class="segment-badge ${segmentClass}">${segment === 'Hot' ? '🔥' : segment === 'Warm' ? '🌡️' : '❄️'} ${segment}</div>
+                </td>
                 <td class="cell-position">${item.position || 'N/A'}</td>
                 <td class="cell-company">${item.company_name || 'N/A'}</td>
-                <td>${keywordTags}</td>
+                <td>${tagsHtml}</td>
                 <td>${item.location || 'N/A'}</td>
                 <td>
-                    ${item.profile_url ? `<a href="${item.profile_url}" target="_blank" class="link-btn">View ↗</a>` : '-'}
+                    <div class="connection-info">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        ${item.connection_count || 0}
+                    </div>
+                </td>
+                <td>
+                    <div class="action-btns">
+                        ${linkedinUrl ? `
+                            <a href="${linkedinUrl}" target="_blank" class="btn-action btn-linkedin" title="View LinkedIn Profile">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                                View
+                            </a>
+                            <button class="btn-action btn-copy" onclick="copyUrl('${linkedinUrl}', this)" title="Copy URL">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                            </button>
+                        ` : '<span style="color:#9ca3af">-</span>'}
+                    </div>
                 </td>
             `;
             tableBody.appendChild(row);
         });
+    }
+
+    function updateStats(data) {
+        const total = data.length;
+        const hot = data.filter(d => d.segment === 'Hot').length;
+        const warm = data.filter(d => d.segment === 'Warm').length;
+        const cold = data.filter(d => d.segment === 'Cold').length;
+
+        document.getElementById('totalCount').innerText = total;
+        document.getElementById('hotCount').innerText = hot;
+        document.getElementById('warmCount').innerText = warm;
+        document.getElementById('coldCount').innerText = cold;
+        countBadge.innerText = total;
+    }
+
+    function filterTable(segment, element) {
+        // Update active tab
+        document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
+        element.classList.add('active');
+
+        // Filter data
+        let filtered = allProspects;
+        if (segment !== 'all') {
+            filtered = allProspects.filter(p => p.segment === segment);
+        }
+
+        renderRows(filtered);
+        countBadge.innerText = filtered.length;
+    }
+
+    function copyUrl(url, btn) {
+        navigator.clipboard.writeText(url).then(() => {
+            btn.classList.add('copied');
+            btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+            showToast('URL copied to clipboard!');
+            setTimeout(() => {
+                btn.classList.remove('copied');
+                btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>';
+            }, 2000);
+        });
+    }
+
+    function copyAllEmails() {
+        const urls = allProspects
+            .map(p => p.linkedin_url || p.profile_url)
+            .filter(url => url)
+            .join('\n');
         
-        resultCard.scrollIntoView({ behavior: 'smooth' });
+        if (urls) {
+            navigator.clipboard.writeText(urls).then(() => {
+                showToast(`Copied ${urls.split('\n').length} URLs to clipboard!`);
+            });
+        } else {
+            showToast('No URLs to copy');
+        }
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        toast.innerText = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
     }
 
     // Status UI
@@ -711,14 +1047,55 @@
         }
     }
 
-    // Export Excel
+    // Export Excel with all new fields
     function exportTableToExcel() {
-        const table = document.getElementById("prospectsTable");
-        const wb = XLSX.utils.table_to_book(table, {sheet: "Prospects"});
+        // Create data array for Excel
+        const excelData = allProspects.map((item, index) => ({
+            '#': item.row_number || index + 1,
+            'Lead Score': item.lead_score || 0,
+            'Segment': item.segment || 'Cold',
+            'Name': item.personal_name || 'N/A',
+            'Position': item.position || 'N/A',
+            'Company': item.company_name || 'N/A',
+            'Industry': item.industry || 'N/A',
+            'Tags': item.tags || '',
+            'Location': item.location || 'N/A',
+            'Connections': item.connection_count || 0,
+            'Followers': item.follower_count || 0,
+            'Experience': item.working_experience || '',
+            'About': item.about_summary || '',
+            'LinkedIn URL': item.linkedin_url || item.profile_url || '',
+            'Scraped At': item.scraped_at || ''
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(excelData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Prospects");
+        
+        // Auto-size columns
+        const colWidths = [
+            { wch: 5 },  // #
+            { wch: 10 }, // Score
+            { wch: 8 },  // Segment
+            { wch: 25 }, // Name
+            { wch: 40 }, // Position
+            { wch: 25 }, // Company
+            { wch: 15 }, // Industry
+            { wch: 30 }, // Tags
+            { wch: 20 }, // Location
+            { wch: 12 }, // Connections
+            { wch: 12 }, // Followers
+            { wch: 50 }, // Experience
+            { wch: 50 }, // About
+            { wch: 50 }, // URL
+            { wch: 20 }, // Scraped At
+        ];
+        ws['!cols'] = colWidths;
+
         const timestamp = new Date().toISOString().slice(0,10);
         XLSX.writeFile(wb, `LinkedIn_Prospects_${timestamp}.xlsx`);
+        showToast('Excel file downloaded!');
     }
-
 </script>
 
 </body>
